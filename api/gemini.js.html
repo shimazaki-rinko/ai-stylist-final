@@ -1,0 +1,138 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2487.2">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Times; -webkit-text-stroke: #000000}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Times; -webkit-text-stroke: #000000; min-height: 14.0px}
+    span.s1 {font-kerning: none}
+  </style>
+</head>
+<body>
+<p class="p1"><span class="s1">// このファイルは、Vercelのサーバーレス関数として動作します。</span></p>
+<p class="p1"><span class="s1">// 安全にGemini APIを呼び出す「仲介役」の役割を果たします。</span></p>
+<p class="p1"><span class="s1">// APIキーはVercelの環境変数に設定します。</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1">const { VertexAI } = require("@google-cloud/vertexai");</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1">export default async function handler(req, res) {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>// CORSヘッダーを設定</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>res.setHeader('Access-Control-Allow-Origin', '*'); // 本番環境では特定のドメインに制限</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>res.setHeader('Access-Control-Allow-Headers', 'Content-Type');</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>// preflight requestへの対応</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>if (req.method === "OPTIONS") {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>return res.status(204).send("");</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>}</span></p>
+<p class="p2"><span class="s1"><span class="Apple-converted-space">  </span></span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>// POSTリクエスト以外は拒否</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>if (req.method !== "POST") {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>return res.status(405).json({ error: "Method Not Allowed" });</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>}</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>try {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>const { feature, prompt, image, isMobile } = req.body;</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>// Vercelの環境変数から認証情報を読み込む</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>if (!process.env.GCP_PROJECT_ID || !process.env.GCP_CLIENT_EMAIL || !process.env.GCP_PRIVATE_KEY) {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>throw new Error("GCP認証情報が環境変数に設定されていません。");</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
+<p class="p2"><span class="s1"><span class="Apple-converted-space">    </span></span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>const vertexAI = new VertexAI({</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>project: process.env.GCP_PROJECT_ID,</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>location: "asia-northeast1",</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>credentials: {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>client_email: process.env.GCP_CLIENT_EMAIL,</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>private_key: process.env.GCP_PRIVATE_KEY.replace(/\\n/g, '\n'),</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>});</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>let responsePayload;</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>if (feature === "analyzer" &amp;&amp; image) {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>// AIスタイルアナライザー機能</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>const model = "gemini-2.5-flash-preview-05-20";</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>const generativeModel = vertexAI.getGenerativeModel({ model });</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>const request = {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>contents: [{</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>role: "user",</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>parts: [</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>{ text: "あなたはプロのファッション評論家です。アップロードされた画像に写っている人物の服装を詳細に分析してください。良い点、改善できる点、そしてコーディネートをさらに引き立てるためのおすすめアイテム（例：アクセサリー、靴、バッグなど）を提案してください。フレンドリーかつ具体的なアドバイスを日本語でお願いします。" },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>{ inlineData: { mimeType: image.mimeType, data: image.data } },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>};</span></p>
+<p class="p2"><span class="s1"><span class="Apple-converted-space">      </span></span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>const result = await generativeModel.generateContent(request);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>responsePayload = result.response.candidates[0].content.parts[0];</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>} else if (feature === "generator") {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>// AIコーディネート提案機能</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>const modelName = isMobile ? "gemini-2.5-flash-image-preview" : "imagen-3.0-generate-002";</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>let generatedText = "AIによるコーディネート提案です。";</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>let generatedImageBase64 = null;</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>if (modelName === "imagen-3.0-generate-002") {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>// --- PC (高品質モデル) のロジック ---</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>let imagePrompt = prompt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>// 画像がある場合、まずテキストを生成する</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>if(image) {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const textGenModel = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash-preview-05-20" });</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const textGenRequest = {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>contents: [{</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>role: "user",</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>parts: [</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>{ text: `これから渡す指示と画像をもとに、生成AI（Imagen）に入力するための、具体的な服装の特徴を描写したプロンプトを生成してください。出力は服装の描写のみとし、他の言葉は含めないでください。\n\n指示: ${prompt}`},</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>{ inlineData: { mimeType: image.mimeType, data: image.data } },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>]</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>}]</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>};</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const textResult = await textGenModel.generateContent(textGenRequest);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>generatedText = prompt; // ユーザーへの返答は元のプロンプトを元にする</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>imagePrompt = textResult.response.candidates[0].content.parts[0].text; // 画像生成にはAIが作った詳細なプロンプトを使う</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const imageGenModel = vertexAI.getGenerativeModel({ model: "imagen-3.0-generate-002" });</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const imageResult = await imageGenModel.generateContent(imagePrompt);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>generatedImageBase64 = imageResult.response.candidates[0].content.parts.find(p =&gt; p.fileData)?.fileData.data;</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>} else {<span class="Apple-converted-space"> </span></span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>// --- モバイル (高速モデル) のロジック ---</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const generativeModel = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash-image-preview" });</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const parts = [{ text: prompt }];</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>if (image) {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>parts.push({ inlineData: { mimeType: image.mimeType, data: image.data } });</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const request = { contents: [{ role: "user", parts }] };</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const result = await generativeModel.generateContent(request);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const content = result.response.candidates[0].content;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>generatedText = content.parts.find(p =&gt; p.text)?.text;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>generatedImageBase64 = content.parts.find(p =&gt; p.inlineData)?.inlineData.data;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>}</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>responsePayload = {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>text: generatedText,</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>base64Data: generatedImageBase64</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>};</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>} else {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>throw new Error("無効なリクエストです。");</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>return res.status(200).json(responsePayload);</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>} catch (error) {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>console.error("サーバーエラー:", error);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>return res.status(500).json({ error: error.message || "サーバー内部でエラーが発生しました。" });</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>}</span></p>
+<p class="p1"><span class="s1">}</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+</body>
+</html>

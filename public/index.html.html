@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIパーソナルスタイリスト システム概要</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+        body {
+            font-family: 'Inter', 'Helvetica Neue', 'Arial', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Meiryo', sans-serif;
+            background-color: #F8F9FA;
+            color: #212529;
+            scroll-behavior: smooth;
+        }
+        .section-card {
+            background-color: #FFFFFF;
+            border: 1px solid #dee2e6;
+            border-radius: 16px;
+            padding: 1.5rem; /* Reduced padding for mobile */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
+            transition: all 0.3s ease;
+        }
+        @media (min-width: 768px) { /* md breakpoint */
+            .section-card {
+                padding: 2.5rem;
+            }
+        }
+        .section-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
+        }
+        .nav-link {
+            transition: all 0.2s ease;
+            cursor: pointer;
+            position: relative;
+            font-weight: 500;
+        }
+        .nav-link:after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #F59E0B;
+            transition: width 0.3s ease;
+        }
+        .nav-link.active, .nav-link:hover {
+            color: #F59E0B;
+        }
+        .nav-link.active:after, .nav-link:hover:after {
+            width: 60%;
+        }
+        .flow-diagram-arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 0.5rem;
+            color: #adb5bd;
+            font-weight: bold;
+        }
+        .tech-card {
+            cursor: pointer;
+        }
+        .tech-card .details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-out, opacity 0.5s ease-out;
+            opacity: 0;
+        }
+        .tech-card.open .details {
+            max-height: 500px;
+            opacity: 1;
+        }
+        .main-btn {
+            background-image: linear-gradient(to right, #FBBF24, #F59E0B);
+            transition: all 0.3s ease;
+            transform: scale(1);
+        }
+        .main-btn:hover {
+            box-shadow: 0 10px 20px -10px #F59E0B;
+            transform: scale(1.05) translateY(-2px);
+        }
+        h1, h2, h3, h4 {
+            letter-spacing: -0.02em;
+        }
+        h2 {
+             font-weight: 800;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="sticky top-0 bg-white/80 backdrop-blur-lg z-10 shadow-sm">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0">
+                    <h1 class="text-lg sm:text-xl font-bold text-gray-800">AI Personal Stylist</h1>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-6">
+                        <a id="nav-about" class="nav-link text-gray-600 px-3 py-2 rounded-md text-sm">概要</a>
+                        <a id="nav-analyzer" class="nav-link text-gray-600 px-3 py-2 rounded-md text-sm">✨ AI分析 ✨</a>
+                        <a id="nav-gemini-feature" class="nav-link text-gray-600 px-3 py-2 rounded-md text-sm">✨ AI提案 ✨</a>
+                        <a id="nav-features" class="nav-link text-gray-600 px-3 py-2 rounded-md text-sm">主要機能</a>
+                        <a id="nav-tech" class="nav-link text-gray-600 px-3 py-2 rounded-md text-sm">System</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
+        <div class="space-y-16 md:space-y-20">
+
+            <section id="about" class="scroll-mt-20">
+                <div class="text-center mb-12 md:mb-16">
+                    <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight">あなただけのAIスタイリストを</h2>
+                    <p class="mt-4 sm:mt-6 max-w-2xl mx-auto text-base sm:text-lg text-gray-600">最新のAI技術を駆使し、ユーザー一人ひとりの好みやTPOに合わせたファッションコーディネートを提案する、次世代チャット機能の設計コンセプトをご紹介します。</p>
+                </div>
+            </section>
+
+            <section id="analyzer" class="scroll-mt-20">
+                <div class="text-center mb-12 md:mb-16">
+                    <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800">✨ AIスタイルアナライザー ✨</h2>
+                    <p class="mt-4 max-w-xl mx-auto text-sm sm:text-base text-gray-500">今日のコーディネート写真をアップロードして、プロのスタイリストから客観的なアドバイスをもらいましょう。</p>
+                </div>
+                <div class="section-card max-w-2xl mx-auto">
+                    <div>
+                        <label for="analyzer-image-upload" class="block text-sm font-medium text-gray-700 mb-2">分析したい画像をアップロード</label>
+                        <input type="file" id="analyzer-image-upload" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100 cursor-pointer">
+                        <img id="analyzer-image-preview" src="#" alt="Analyzer Image Preview" class="mt-4 hidden w-full rounded-lg object-cover max-h-96">
+                    </div>
+                    <div class="flex items-center justify-center mt-6">
+                        <button id="analyze-btn" class="main-btn flex items-center justify-center px-6 py-3 border border-transparent text-sm sm:text-base font-medium rounded-full shadow-sm text-white">
+                            <span id="analyze-btn-text">✨ スタイルを分析する ✨</span>
+                            <div id="analyzer-loading-spinner" class="hidden w-5 h-5 border-2 border-white border-t-2 border-t-transparent rounded-full animate-spin"></div>
+                        </button>
+                    </div>
+                    <div id="analyzer-result-container" class="mt-8 p-4 sm:p-6 bg-gray-50 rounded-lg hidden">
+                        <p class="text-base sm:text-lg font-medium text-gray-800 mb-2">AIからの分析結果:</p>
+                        <p id="analyzer-response" class="text-sm sm:text-base text-gray-700 whitespace-pre-wrap leading-relaxed"></p>
+                    </div>
+                    <div id="analyzer-error-message" class="hidden mt-4 text-center text-red-600 text-sm"></div>
+                </div>
+            </section>
+
+            <section id="gemini-feature" class="scroll-mt-20">
+                <div class="text-center mb-12 md:mb-16">
+                    <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800">✨AIパーソナルコーディネート提案✨</h2>
+                    <p class="mt-4 max-w-xl mx-auto text-sm sm:text-base text-gray-500">あなたが持つ画像の雰囲気や、なりたいスタイルをAIに伝えてみましょう。画像をアップロードし、文章で指示を出すことで、AIがあなたのための特別なコーディネートを提案します。</p>
+                </div>
+                
+                <div class="section-card max-w-4xl mx-auto">
+                    <div class="grid md:grid-cols-2 gap-6 md:gap-8">
+                        <div>
+                             <label for="city-input" class="block text-sm font-medium text-gray-700 mb-2">天気を知りたい都市名を入力</label>
+                            <div class="flex space-x-2">
+                                <input type="text" id="city-input" value="東京" class="flex-1 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm sm:text-base" placeholder="例：東京">
+                                <button id="get-weather-btn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm">検索</button>
+                            </div>
+                            <div id="weather-info" class="hidden mt-4 p-4 rounded-lg bg-amber-50">
+                                <p class="text-base sm:text-lg font-bold" id="weather-city"></p>
+                                <p class="text-xs sm:text-sm" id="weather-description"></p>
+                                <p class="text-3xl sm:text-4xl font-extrabold text-amber-600 mt-2"><span id="weather-temp"></span>℃</p>
+                                <p class="text-xs sm:text-sm mt-2" id="precipitation-forecast"></p>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">※ このデモでは固定の天気を表示します。</p>
+                            <label for="image-upload" class="block text-sm font-medium text-gray-700 mt-6 mb-2">画像アップロード（任意）</label>
+                            <input type="file" id="image-upload" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100 cursor-pointer">
+                            <img id="image-preview" src="#" alt="Image Preview" class="mt-4 hidden w-full rounded-lg object-cover max-h-64">
+                        </div>
+                        <div>
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label for="user-height" class="block text-sm font-medium text-gray-700 mb-2">身長 (cm)</label>
+                                    <input type="number" id="user-height" class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm sm:text-base" placeholder="例：170">
+                                </div>
+                                <div>
+                                    <label for="user-weight" class="block text-sm font-medium text-gray-700 mb-2">体重 (kg)</label>
+                                    <input type="number" id="user-weight" class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm sm:text-base" placeholder="例：65">
+                                </div>
+                            </div>
+                            <label for="user-prompt" class="block text-sm font-medium text-gray-700 mb-2">AIへの指示</label>
+                            <textarea id="user-prompt" rows="3" class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm sm:text-base" placeholder="例：オフィスカジュアルなコーデを提案してください。"></textarea>
+                            <div class="flex items-center justify-center mt-6">
+                                <button id="generate-btn" class="main-btn flex items-center justify-center px-6 py-3 border border-transparent text-sm sm:text-base font-medium rounded-full shadow-sm text-white">
+                                    <span id="btn-text">✨コーディネートを提案✨</span>
+                                    <div id="loading-spinner" class="hidden w-5 h-5 border-2 border-white border-t-2 border-t-transparent rounded-full animate-spin"></div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="result-container" class="mt-8 p-4 sm:p-6 bg-gray-50 rounded-lg hidden">
+                        <p class="text-base sm:text-lg font-medium text-gray-800 mb-2">AIからの提案:</p>
+                        <p id="gemini-response" class="text-sm sm:text-base text-gray-700 whitespace-pre-wrap leading-relaxed"></p>
+                        <div class="mt-6 flex flex-col items-center">
+                            <p class="text-base sm:text-lg font-medium text-gray-800 mb-2">提案コーディネートのイメージ:</p>
+                            <img id="outfit-image-preview" src="#" alt="Generated Outfit" class="rounded-lg shadow-md max-w-full">
+                        </div>
+                    </div>
+                    <div id="error-message" class="hidden mt-4 text-center text-red-600 text-sm"></div>
+                </div>
+            </section>
+            
+            <section id="features" class="scroll-mt-20">
+                <div class="text-center mb-12 md:mb-16">
+                    <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800">インタラクティブな主要機能</h2>
+                    <p class="mt-4 max-w-xl mx-auto text-sm sm:text-base text-gray-500">ユーザーの要望に応えるためのユニークな機能と、その仕組みを図解で解説します。</p>
+                </div>
+                
+                <div class="space-y-12">
+                    <div class="section-card">
+                        <h3 class="text-lg sm:text-xl font-semibold mb-2">機能1：画像からのスタイル学習</h3>
+                        <p class="text-sm sm:text-base text-gray-600 mb-8">お気に入りの画像をAIに学習させ、あなたの「好き」をコーディネートに反映させる機能です。以下のフローで、AIは視覚的な好みをデータに変換します。</p>
+                        <div class="flex flex-col md:flex-row items-start justify-between space-y-8 md:space-y-0 md:space-x-4">
+                            <!-- Step 1 -->
+                            <div class="flex flex-col items-center text-center w-full md:w-1/5">
+                                <div class="bg-amber-100 rounded-full p-4 mb-3 inline-block">
+                                    <svg class="w-8 h-8 text-amber-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                </div>
+                                <h4 class="font-semibold text-gray-700 text-sm sm:text-base">ユーザーの画像</h4>
+                                <p class="text-xs text-gray-500 mt-1">好みのスタイル画像をアップロード</p>
+                            </div>
+                            <div class="text-gray-300 text-3xl hidden md:flex items-center pt-8">→</div>
+                            <!-- Step 2 -->
+                            <div class="flex flex-col items-center text-center w-full md:w-1/5">
+                                <div class="bg-amber-100 rounded-full p-4 mb-3 inline-block">
+                                    <svg class="w-8 h-8 text-amber-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M12 6V3m0 18v-3M5.636 5.636L4.222 4.222m15.556 15.556l-1.414-1.414M4.222 19.778l1.414-1.414M19.778 4.222l-1.414 1.414M12 18a6 6 0 100-12 6 6 0 000 12z"></path></svg>
+                                </div>
+                                <h4 class="font-semibold text-gray-700 text-sm sm:text-base">VLMで分析</h4>
+                                <p class="text-xs text-gray-500 mt-1">色・形・パターンをAIが解析</p>
+                            </div>
+                            <div class="text-gray-300 text-3xl hidden md:flex items-center pt-8">→</div>
+                            <!-- Step 3 -->
+                            <div class="flex flex-col items-center text-center w-full md:w-1/5">
+                                <div class="bg-amber-100 rounded-full p-4 mb-3 inline-block">
+                                    <svg class="w-8 h-8 text-amber-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10s5 2 5 2a8 8 0 013.657 6.657zM9 10a8 8 0 0111.314 0c.098.098.19.2.278.302S21 11 21 11a8 8 0 01-6.657 3.657z"></path></svg>
+                                </div>
+                                <h4 class="font-semibold text-gray-700 text-sm sm:text-base">スタイルをベクトル化</h4>
+                                <p class="text-xs text-gray-500 mt-1">ファッションの特徴を数値データに変換</p>
+                            </div>
+                            <div class="text-gray-300 text-3xl hidden md:flex items-center pt-8">→</div>
+                            <!-- Step 4 -->
+                            <div class="flex flex-col items-center text-center w-full md:w-1/5">
+                                <div class="bg-amber-100 rounded-full p-4 mb-3 inline-block">
+                                    <svg class="w-8 h-8 text-amber-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                </div>
+                                <h4 class="font-semibold text-gray-700 text-sm sm:text-base">データベース検索</h4>
+                                <p class="text-xs text-gray-500 mt-1">膨大なアイテムから類似スタイルを探索</p>
+                            </div>
+                            <div class="text-gray-300 text-3xl hidden md:flex items-center pt-8">→</div>
+                             <!-- Step 5 -->
+                            <div class="flex flex-col items-center text-center w-full md:w-1/5">
+                                <div class="bg-amber-100 rounded-full p-4 mb-3 inline-block">
+                                    <svg class="w-8 h-8 text-amber-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                                </div>
+                                <h4 class="font-semibold text-gray-700 text-sm sm:text-base">類似アイテム提案</h4>
+                                <p class="text-xs text-gray-500 mt-1">ユーザーに最適な商品を提案</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="tech" class="scroll-mt-20">
+                <div class="text-center mb-12 md:mb-16">
+                    <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800">System</h2>
+                    <p class="mt-4 max-w-xl mx-auto text-sm sm:text-base text-gray-500">高度なパーソナライズを実現するため、3つの主要なAI技術を組み合わせています。各カードをクリックして詳細をご覧ください。</p>
+                </div>
+                <div class="grid md:grid-cols-3 gap-6 md:gap-8">
+                    <div class="section-card tech-card">
+                        <h3 class="text-lg sm:text-xl font-semibold mb-3">🧠 プロンプトエンジニアリング</h3>
+                        <p class="text-sm sm:text-base text-gray-600">ユーザーの曖昧な要望を的確な提案に繋げます。</p>
+                        <div class="details mt-4 border-t pt-4">
+                            <p class="text-sm text-gray-700">ユーザーの好み、目的、避けたいスタイルなどを自然な対話から引き出すための質問（プロンプト）を最適化します。これにより、AIの応答精度を飛躍的に向上させ、本当に求めているスタイルを発見する手助けをします。</p>
+                        </div>
+                    </div>
+                    <div class="section-card tech-card">
+                        <h3 class="text-lg sm:text-xl font-semibold mb-3">📚 大規模言語モデル (LLM)</h3>
+                        <p class="text-sm sm:text-base text-gray-600">ファッションの知識とトレンドを学習します。</p>
+                        <div class="details mt-4 border-t pt-4">
+                            <p class="text-sm text-gray-700">膨大なファッション雑誌、ブログ、SNSのデータを学習させることで、専門用語や最新トレンドを理解した自然な対話を実現します。ファインチューニングにより、特定のブランドやスタイルに特化した知識を持つことも可能です。</p>
+                        </div>
+                    </div>
+                    <div class="section-card tech-card">
+                        <h3 class="text-lg sm:text-xl font-semibold mb-3">🖼️ Vision-Language Model (VLM)</h3>
+                        <p class="text-sm sm:text-base text-gray-600">画像からスタイルや雰囲気を読み取ります。</p>
+                         <div class="details mt-4 border-t pt-4">
+                            <p class="text-sm text-gray-700">テキストと画像を同時に処理できるAIモデルです。ユーザーがアップロードした写真やインスタグラムの投稿から、色、形、素材、スタイルといった視覚的特徴を抽出し、言語データと結びつけて提案に活かします。</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="bg-white border-t mt-16 md:mt-20">
+        <div class="container mx-auto py-8 px-4 sm:px-6 lg:px-8 text-center text-gray-500">
+            <p class="text-xs sm:text-sm">&copy; 2025 AI Personal Stylist Project. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Element References ---
+            const sections = document.querySelectorAll('section');
+            const navLinks = document.querySelectorAll('.nav-link');
+            const cityInput = document.getElementById('city-input');
+            const getWeatherBtn = document.getElementById('get-weather-btn');
+            const weatherInfo = document.getElementById('weather-info');
+            const weatherCity = document.getElementById('weather-city');
+            const weatherTemp = document.getElementById('weather-temp');
+            const weatherDescription = document.getElementById('weather-description');
+            const precipitationForecast = document.getElementById('precipitation-forecast');
+            const imageUpload = document.getElementById('image-upload');
+            const imagePreview = document.getElementById('image-preview');
+            const userPrompt = document.getElementById('user-prompt');
+            const userHeight = document.getElementById('user-height');
+            const userWeight = document.getElementById('user-weight');
+            const generateBtn = document.getElementById('generate-btn');
+            const btnText = document.getElementById('btn-text');
+            const loadingSpinner = document.getElementById('loading-spinner');
+            const resultContainer = document.getElementById('result-container');
+            const geminiResponse = document.getElementById('gemini-response');
+            const outfitImagePreview = document.getElementById('outfit-image-preview');
+            const errorMessage = document.getElementById('error-message');
+            const analyzerImageUpload = document.getElementById('analyzer-image-upload');
+            const analyzerImagePreview = document.getElementById('analyzer-image-preview');
+            const analyzeBtn = document.getElementById('analyze-btn');
+            const analyzeBtnText = document.getElementById('analyze-btn-text');
+            const analyzerLoadingSpinner = document.getElementById('analyzer-loading-spinner');
+            const analyzerResultContainer = document.getElementById('analyzer-result-container');
+            const analyzerResponse = document.getElementById('analyzer-response');
+            const analyzerErrorMessage = document.getElementById('analyzer-error-message');
+
+            // --- Navigation Logic ---
+            function changeActiveLink() {
+                let index = sections.length;
+                while(--index && window.scrollY + 100 < sections[index].offsetTop) {}
+                navLinks.forEach((link) => link.classList.remove('active'));
+                const activeLink = document.querySelector(`#nav-${sections[index].id}`);
+                if (activeLink) activeLink.classList.add('active');
+            }
+            changeActiveLink();
+            window.addEventListener('scroll', changeActiveLink);
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetId = link.id.split('-')[1];
+                    const targetSection = document.getElementById(targetId);
+                    if (targetSection) {
+                        window.scrollTo({ top: targetSection.offsetTop - 80, behavior: 'smooth' });
+                    }
+                });
+            });
+
+            // --- Accordion Logic for "System" section ---
+            const techCards = document.querySelectorAll('.tech-card');
+            techCards.forEach(card => {
+                card.addEventListener('click', () => card.classList.toggle('open'));
+            });
+            
+            // --- Dummy Weather Function ---
+            getWeatherBtn.addEventListener('click', () => {
+                const city = cityInput.value;
+                if (!city) {
+                    errorMessage.textContent = '都市名を入力してください。';
+                    errorMessage.classList.remove('hidden');
+                    return;
+                }
+                errorMessage.classList.add('hidden');
+                weatherInfo.classList.remove('hidden');
+                weatherCity.textContent = `${city}の天気`;
+                weatherDescription.textContent = '快晴';
+                weatherTemp.textContent = '22';
+                precipitationForecast.textContent = '夕方16時ごろには雨が降りそうです。';
+            });
+            
+            // --- Image Preview Logic ---
+            imageUpload.addEventListener('change', (e) => previewImage(e.target, imagePreview));
+            analyzerImageUpload.addEventListener('change', (e) => previewImage(e.target, analyzerImagePreview));
+
+            function previewImage(input, previewElement) {
+                const file = input.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        previewElement.src = e.target.result;
+                        previewElement.classList.remove('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    previewElement.classList.add('hidden');
+                    previewElement.src = '#';
+                }
+            }
+            
+            // --- Utility to convert file to Base64 ---
+            function fileToBase64(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result.split(',')[1]);
+                    reader.onerror = error => reject(error);
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            // --- Main API Call Functions ---
+
+            // Style Analyzer
+            analyzeBtn.addEventListener('click', async () => {
+                const file = analyzerImageUpload.files[0];
+                if (!file) {
+                    analyzerErrorMessage.textContent = '分析する画像をアップロードしてください。';
+                    analyzerErrorMessage.classList.remove('hidden');
+                    return;
+                }
+
+                analyzerErrorMessage.classList.add('hidden');
+                analyzerResultContainer.classList.add('hidden');
+                analyzeBtnText.classList.add('hidden');
+                analyzerLoadingSpinner.classList.remove('hidden');
+                analyzeBtn.disabled = true;
+
+                try {
+                    const base64Image = await fileToBase64(file);
+                    const requestPayload = {
+                        feature: 'analyzer',
+                        image: {
+                           mimeType: file.type,
+                           data: base64Image
+                        }
+                    };
+
+                    const response = await fetch("/api/gemini", {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(requestPayload)
+                    });
+
+                    if (!response.ok) {
+                        const errorBody = await response.json();
+                        throw new Error(errorBody.error || 'バックエンドでエラーが発生しました。');
+                    }
+
+                    const result = await response.json();
+                    if (!result.text) throw new Error('AIから有効なテキスト応答がありませんでした。');
+                    
+                    analyzerResponse.textContent = result.text;
+                    analyzerResultContainer.classList.remove('hidden');
+
+                } catch (error) {
+                    console.error('分析エラー:', error);
+                    analyzerErrorMessage.textContent = `エラーが発生しました: ${error.message}`;
+                    analyzerErrorMessage.classList.remove('hidden');
+                } finally {
+                    analyzeBtnText.classList.remove('hidden');
+                    analyzerLoadingSpinner.classList.add('hidden');
+                    analyzeBtn.disabled = false;
+                }
+            });
+
+            // Coordinate Generator
+            generateBtn.addEventListener('click', async () => {
+                const prompt = userPrompt.value;
+                if (!prompt.trim()) {
+                    errorMessage.textContent = 'AIへの指示を入力してください。';
+                    errorMessage.classList.remove('hidden');
+                    return;
+                }
+
+                errorMessage.classList.add('hidden');
+                resultContainer.classList.add('hidden');
+                btnText.classList.add('hidden');
+                loadingSpinner.classList.remove('hidden');
+                generateBtn.disabled = true;
+
+                try {
+                    let fullPrompt = prompt;
+                    if (userHeight.value) fullPrompt += `\n身長: ${userHeight.value}cm`;
+                    if (userWeight.value) fullPrompt += `\n体重: ${userWeight.value}kg`;
+
+                    const requestPayload = {
+                        feature: 'generator',
+                        prompt: fullPrompt,
+                        isMobile: window.innerWidth < 768
+                    };
+
+                    const file = imageUpload.files[0];
+                    if (file) {
+                        const base64Image = await fileToBase64(file);
+                        requestPayload.image = {
+                           mimeType: file.type,
+                           data: base64Image
+                        };
+                    }
+
+                    const response = await fetch("/api/gemini", {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(requestPayload)
+                    });
+
+                    if (!response.ok) {
+                        const errorBody = await response.json();
+                        throw new Error(errorBody.error || 'バックエンドでエラーが発生しました。');
+                    }
+
+                    const result = await response.json();
+
+                    if (result.base64Data) {
+                        geminiResponse.textContent = result.text || "（AIからのテキスト提案はありませんでした）";
+                        outfitImagePreview.src = `data:image/png;base64,${result.base64Data}`;
+                        resultContainer.classList.remove('hidden');
+                    } else {
+                        throw new Error('AIからの応答が不完全でした。');
+                    }
+
+                } catch (error) {
+                    console.error('提案エラー:', error);
+                    errorMessage.textContent = `エラーが発生しました: ${error.message}`;
+                    errorMessage.classList.remove('hidden');
+                } finally {
+                    btnText.classList.remove('hidden');
+                    loadingSpinner.classList.add('hidden');
+                    generateBtn.disabled = false;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
